@@ -47,12 +47,7 @@ def check_url():
     detection_details = virus_total_result["data"]["attributes"].get("last_analysis_stats", {})
     additional_info = virus_total_result["data"]["attributes"].get("tags", [])
 
-    # Store the URL and its status in Firestore
-    db.collection("phishing_reports").add({
-        "url": url,
-        "is_phishing": is_phishing,
-        "timestamp": firestore.SERVER_TIMESTAMP
-    })
+    
 
     message = "Phishing detected!" if is_phishing else "Safe URL"
 
