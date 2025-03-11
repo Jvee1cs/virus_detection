@@ -10,11 +10,6 @@ from flask_cors import CORS  # Import CORS
 app = Flask(__name__)
 CORS(app)  # Enable CORS for all routes
 
-# Load Firebase config from environment variable
-firebase_config = json.loads(os.getenv('FIREBASE_CONFIG'))
-
-cred = credentials.Certificate(firebase_config)
-firebase_admin.initialize_app(cred)
 
 # VirusTotal API Key (hardcoded directly in the code)
 VIRUS_TOTAL_API_KEY = "22abddfd9a6bd0923b3404e35522e6b4b45abe7738fb5675f1b0b500bc44435f"
