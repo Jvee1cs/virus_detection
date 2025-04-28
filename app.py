@@ -1,18 +1,27 @@
 import base64
-import json
 import requests
 import firebase_admin
 from firebase_admin import credentials, firestore
 from flask import Flask, request, jsonify
 from flask_cors import CORS  # Import CORS
-
+from datetime import datetime
 # Initialize Flask App
 app = Flask(__name__)
-CORS(app, resources={r"/*": {"origins": "https://virus-aics.web.app"}})
+CORS(app)  # Enable CORS for all routes
 
+# Load Firebase
+cred = credentials.Certificate("firebase_config.json")
+firebase_admin.initialize_app(cred)
+db = firestore.client()
+# Initialize coupon codes collection
+COUPON_CODES = {
+    "phis7d": {"MAX_USES": 3},  # Existing coupon code
+    "phistrial": {"MAX_USES": 3},  # New coupon code
+    "newuser": {"MAX_USES": 3},  # New coupon code
+    "trial": {"MAX_USES": 3}  # New coupon code
+}
 
-
-# VirusTotal API Key (hardcoded directly in the code)
+# VirusTotal API Key (hardcoded directly in the code 25be5ec8d04d39c8b272ba0d5323364ab759eab00540c98abf551ec2c9c8cbaf)4e870c6da30320112c87f9d662aabf5efbad0cf651eafd61ee7a6ee50da4331f 
 VIRUS_TOTAL_API_KEY = "22abddfd9a6bd0923b3404e35522e6b4b45abe7738fb5675f1b0b500bc44435f"
 
 # Function to check URL with VirusTotal API
@@ -27,7 +36,39 @@ def check_url_with_virustotal(url):
         return None, f"Error with VirusTotal API: {response.text}"
     
     return response.json(), None
+@app.route("/validate_coupon", methods=["POST"])
+def validate_coupon():
+    data = request.json
+    coupon = data.get("coupon", "").strip()
 
+    if not coupon:
+        return jsonify({"error": "No coupon provided."}), 400
+
+    if coupon not in COUPON_CODES:
+        return jsonify({"error": "Invalid coupon."}), 400
+
+    coupon_data = COUPON_CODES[coupon]
+    max_uses = coupon_data["MAX_USES"]
+    coupon_ref = db.collection("coupons").document(coupon)
+    coupon_doc = coupon_ref.get()
+
+    if not coupon_doc.exists:
+        # First time use, create it
+        coupon_ref.set({
+            "uses": 1,
+            "created_at": datetime.now()
+        })
+        return jsonify({"message": "Coupon accepted.", "remaining_uses": max_uses - 1})
+
+    coupon_data = coupon_doc.to_dict()
+    uses = coupon_data.get("uses", 0)
+
+    if uses >= max_uses:
+        return jsonify({"error": "Coupon has reached its usage limit."}), 400
+
+    # Increment usage
+    coupon_ref.update({"uses": uses + 1})
+    return jsonify({"message": "Coupon accepted.", "remaining_uses": max_uses - (uses + 1)})
 @app.route("/check_url", methods=["POST"])
 def check_url():
     data = request.json
@@ -48,7 +89,12 @@ def check_url():
     detection_details = virus_total_result["data"]["attributes"].get("last_analysis_stats", {})
     additional_info = virus_total_result["data"]["attributes"].get("tags", [])
 
-    
+    # Store the URL and its status in Firestore
+    db.collection("phishing_reports").add({
+        "url": url,
+        "is_phishing": is_phishing,
+        "timestamp": firestore.SERVER_TIMESTAMP
+    })
 
     message = "Phishing detected!" if is_phishing else "Safe URL"
 
