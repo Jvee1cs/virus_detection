@@ -10,9 +10,7 @@ app = Flask(__name__)
 CORS(app)  # Enable CORS for all routes
 
 # Load Firebase
-cred = credentials.Certificate("firebase_config.json")
-firebase_admin.initialize_app(cred)
-db = firestore.client()
+
 # Initialize coupon codes collection
 COUPON_CODES = {
     "phis7d": {"MAX_USES": 3},  # Existing coupon code
