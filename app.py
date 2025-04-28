@@ -25,6 +25,11 @@ firebase_config = {
 # Initialize Firebase with credentials
 cred = credentials.Certificate(firebase_config)
 firebase_admin.initialize_app(cred)
+# Initialize Firestore
+db = firestore.client()
+
+# Rest of your code...
+
 # Initialize coupon codes collection
 COUPON_CODES = {
     "phis7d": {"MAX_USES": 3},  # Existing coupon code
