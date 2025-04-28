@@ -7,8 +7,7 @@ from flask_cors import CORS  # Import CORS
 from datetime import datetime
 # Initialize Flask App
 app = Flask(__name__)
-CORS(app)  # Enable CORS for all routes
-
+CORS(app, resources={r"/*": {"origins": "https://virus-aics.web.app"}})
 # Load Firebase
 
 # Initialize coupon codes collection
